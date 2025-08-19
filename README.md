@@ -84,7 +84,7 @@ This document describes the design of a ticket booking system. It ensures safe s
 ## 7. Spring Boot Code Snippets
 
 ### Redis Lock Utility
-```java
+
 @Component
 public class RedisLockService {
     @Autowired private StringRedisTemplate redisTemplate;
@@ -101,7 +101,7 @@ public class RedisLockService {
     }
 }
 
-```java
+
 @Service
 public class ReservationService {
     @Autowired private RedisLockService lockService;
@@ -129,7 +129,7 @@ public class ReservationService {
     }
 }
 
-```java
+
 @Service
 public class BookingService {
     @Autowired private ReservationRepository reservationRepo;
