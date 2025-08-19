@@ -42,13 +42,14 @@ This document describes the design of a ticket booking system. It ensures safe s
 
 ## 4. API Design
 
-| API | Method | Description |
-|-----|--------|-------------|
-| `/reservations` | POST | Reserve a seat for a user |
-| `/payments` | POST | Initiate payment for a reservation |
-| `/bookings` | POST | Finalize booking after payment success |
-| `/reservations/{id}` | GET | Check reservation status |
-| `/bookings/{id}` | GET | Fetch booking details |
+| Endpoint | Method | Request Body | Response Body | Status Codes | Description |
+|----------|--------|--------------|---------------|--------------|-------------|
+| `/reservations` | POST | `{ "userId": 123, "seatId": 456 }` | `{ "reservationId": 789, "seatId": 456, "userId": 123, "status": "RESERVED", "reservedUntil": "2025-08-19T12:35:00Z" }` | 200 OK, 409 Conflict (seat reserved), 500 Server Error | Reserve a seat for a user |
+| `/reservations/{reservationId}` | GET | - | `{ "reservationId": 789, "seatId": 456, "userId": 123, "status": "RESERVED", "reservedUntil": "2025-08-19T12:35:00Z" }` | 200 OK, 404 Not Found | Check reservation status |
+| `/payments` | POST | `{ "reservationId": 789, "amount": 50.00, "currency": "USD" }` | `{ "paymentId": 321, "reservationId": 789, "status": "PENDING", "gatewayUrl": "https://payment-gateway.com/checkout/321" }` | 200 OK, 400 Bad Request, 500 Server Error | Initiate payment for a reservation |
+| `/payments/callback` | POST | `{ "paymentId": 321, "status": "SUCCESS" }` | `{ "paymentId": 321, "reservationId": 789, "status": "SUCCESS" }` | 200 OK, 400 Bad Request | Payment gateway callback to update payment status |
+| `/bookings` | POST | `{ "reservationId": 789, "paymentId": 321 }` | `{ "bookingId": 654, "seatId": 456, "userId": 123, "paymentId": 321, "status": "CONFIRMED" }` | 200 OK, 400 Bad Request, 409 Conflict | Confirm booking after payment success |
+| `/bookings/{bookingId}` | GET | - | `{ "bookingId": 654, "seatId": 456, "userId": 123, "paymentId": 321, "status": "CONFIRMED" }` | 200 OK, 404 Not Found | Get booking details |
 
 ---
 
