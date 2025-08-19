@@ -100,3 +100,54 @@ public class RedisLockService {
         }
     }
 }
+
+```java
+@Service
+public class ReservationService {
+    @Autowired private RedisLockService lockService;
+    @Autowired private ReservationRepository reservationRepo;
+
+    @Transactional
+    public Reservation reserveSeat(Long seatId, Long userId) {
+        String lockKey = "lock:seat:" + seatId;
+        String lockVal = UUID.randomUUID().toString();
+
+        if (!lockService.acquireLock(lockKey, lockVal, Duration.ofSeconds(30))) {
+            throw new RuntimeException("Seat already locked.");
+        }
+
+        try {
+            if (reservationRepo.existsActiveReservation(seatId)) {
+                throw new RuntimeException("Seat already reserved.");
+            }
+
+            Reservation res = new Reservation(seatId, userId, LocalDateTime.now().plusMinutes(5));
+            return reservationRepo.save(res);
+        } finally {
+            lockService.releaseLock(lockKey, lockVal);
+        }
+    }
+}
+
+```java
+@Service
+public class BookingService {
+    @Autowired private ReservationRepository reservationRepo;
+    @Autowired private BookingRepository bookingRepo;
+
+    @Transactional
+    public Booking confirmBooking(Long reservationId, Long paymentId) {
+        Reservation res = reservationRepo.findById(reservationId)
+            .orElseThrow(() -> new RuntimeException("Reservation not found"));
+
+        if (res.getReservedUntil().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reservation expired.");
+        }
+
+        res.setStatus("CONFIRMED");
+        reservationRepo.save(res);
+
+        Booking booking = new Booking(res.getSeatId(), res.getUserId(), paymentId, "CONFIRMED");
+        return bookingRepo.save(booking);
+    }
+}
